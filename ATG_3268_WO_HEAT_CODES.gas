@@ -1,0 +1,304 @@
+Program.Sub.ScreenSU.Start
+gui.F_Main..create
+gui.F_Main..caption("Heat Code")
+gui.F_Main..size(2940,2205)
+gui.F_Main..position(0,0)
+gui.F_Main..event(unload,f_main_unload)
+gui.F_Main..alwaysontop(False)
+gui.F_Main..fontname("Arial")
+gui.F_Main..fontsize(8)
+gui.F_Main..forecolor(0)
+gui.F_Main..fontstyle(,,,,)
+gui.F_Main..BackColor(-2147483633)
+gui.F_Main..controlbox(True)
+gui.F_Main..maxbutton(True)
+gui.F_Main..minbutton(True)
+gui.F_Main..mousepointer(0)
+gui.F_Main..moveable(True)
+gui.F_Main..sizeable(False)
+gui.F_Main..ShowInTaskBar(True)
+gui.F_Main..titlebar(True)
+gui.F_Main.txtCode.create(textbox,"",True,1860,300,0,200,415,True,0,Arial,8,-2147483643,1)
+gui.F_Main.txtCode.maxLength(3)
+gui.F_Main.lbl1.create(label,"Heat Code",True,1005,255,1,200,200,True,0,Arial,8,-2147483633,0)
+gui.F_Main.cmdSave.create(button)
+gui.F_Main.cmdSave.caption("Save")
+gui.F_Main.cmdSave.visible(True)
+gui.F_Main.cmdSave.size(855,375)
+gui.F_Main.cmdSave.zorder(0)
+gui.F_Main.cmdSave.position(200,810)
+gui.F_Main.cmdSave.enabled(True)
+gui.F_Main.cmdSave.fontname("Arial")
+gui.F_Main.cmdSave.fontsize(8)
+gui.F_Main.cmdSave.event(click,cmdsave_click)
+gui.F_Main.cmdCancel.create(button)
+gui.F_Main.cmdCancel.caption("Cancel")
+gui.F_Main.cmdCancel.visible(True)
+gui.F_Main.cmdCancel.size(855,375)
+gui.F_Main.cmdCancel.zorder(0)
+gui.F_Main.cmdCancel.position(1175,810)
+gui.F_Main.cmdCancel.enabled(True)
+gui.F_Main.cmdCancel.fontname("Arial")
+gui.F_Main.cmdCancel.fontsize(8)
+gui.F_Main.cmdCancel.event(click,cmdcancel_click)
+
+
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+'Coded by: JLH
+'Project Start Date: 11/30/2011
+
+F.ODBC.Connection!conx.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass)
+
+F.Intrinsic.Control.SelectCase(V.Caller.Hook)
+
+F.Intrinsic.Control.Case(28820)
+'Issue Material Job Change
+	F.Intrinsic.Control.If(V.Passed.000002.Trim,<>,"")
+		F.Intrinsic.Control.CallSub(Populate)
+		Gui.F_Main..Show
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Control.CallSub(F_main_unload)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Case(28840)
+'Issue Material Pre Process
+	F.Intrinsic.Control.If(V.Passed.000002.Trim,<>,"")
+		F.Intrinsic.Control.CallSub(Preprocess,"Job",V.passed.000002,"Suffix",V.Passed.000003)
+	F.Intrinsic.Control.Else
+		F.Intrinsic.Control.CallSub(F_main_unload)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Case(28860)
+'Issue Material Script 1
+	F.Intrinsic.Control.If(V.Passed.000002.Trim,<>,"")
+		F.Intrinsic.Control.CallSub(Populate)
+		Gui.F_Main..Show
+	F.Intrinsic.Control.else
+		F.Intrinsic.Control.CallSub(F_main_unload)
+	F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.Case(28842)
+'Issue Material Post Process
+	F.Intrinsic.Control.CallSub(Postprocess)
+
+F.Intrinsic.Control.Case(16500)
+'Lot/Bin Populate
+	F.Intrinsic.Control.CallSub(Heatpopulate)
+
+F.Intrinsic.Control.Case(28810)
+
+	V.Passed.000260.Set("Heat Code")
+	F.Intrinsic.Control.CallSub(F_main_unload)
+
+F.Intrinsic.Control.EndSelect
+
+
+Program.Sub.Main.End
+
+program.sub.f_main_unload.start
+F.ODBC.Connection!conx.Close
+F.Intrinsic.Control.End
+
+program.sub.f_main_unload.end
+
+Program.Sub.Populate.Start
+V.Local.sQuery.Declare(String)
+
+F.Intrinsic.Debug.Stop
+
+V.Local.sQuery.Set("Select * FROM ATG_3268_HEAT_CODES where TYPE='U' and USED_DATE= CURDATE()")
+F.ODBC.Connection!conx.OpenRecordsetRO("rst",V.Local.sQuery)
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+	Gui.F_Main.txtCode.Text(V.ODBC.conx!rst.FieldVal!Code)
+F.Intrinsic.Control.EndIf
+F.ODBC.conx!rst.Close
+
+Program.Sub.Populate.End
+
+program.sub.cmdsave_click.start
+V.Local.sQuery.Declare(String)
+V.Local.sDate.Declare(String)
+V.Local.iLen.Declare(String)
+
+F.Intrinsic.Debug.Stop
+
+F.Intrinsic.Control.If(V.Screen.F_Main!txtCode.Text,<>,"")
+	F.Intrinsic.String.Len(V.Screen.F_Main!txtCode.Text,V.Local.iLen)
+	F.Intrinsic.Control.If(V.Local.iLen,=,3)
+		V.Local.sQuery.Set("Select * FROM ATG_3268_HEAT_CODESwhereTYPE='U'andUSED_DATE=CURDATE()")
+		F.ODBC.Connection!conx.OpenRecordsetRW("rst",V.Local.sQuery)
+		F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+			F.Intrinsic.String.Concat("Select * from ATG_3268_HEAT_CODES where TYPE='R' and CODE='",V.Screen.F_Main!txtCode.Text,"'",V.Local.sQuery)
+			F.ODBC.Connection!conx.OpenRecordsetRW("rstR",V.Local.sQuery)
+			F.Intrinsic.Control.If(V.ODBC.conx!rstR.EOF,=,True)
+				F.ODBC.conx!rst.Set!CODE(V.Screen.F_Main!txtCode.Text)
+				F.ODBC.conx!rst.Update
+				F.ODBC.conx!rst.Close
+				F.ODBC.conx!rstR.Close
+			F.Intrinsic.Control.Else
+				F.Intrinsic.UI.Msgbox("Restricted Heat Code")
+				Gui.F_Main.txtCode.Text("")
+				F.ODBC.conx!rst.Close
+				F.ODBC.conx!rstR.Close
+				F.Intrinsic.Control.ExitSub
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Concat("Select * from ATG_3268_HEAT_CODES where TYPE='R' and CODE='",V.Screen.F_Main!txtCode.Text,"'",V.Local.sQuery)
+			F.ODBC.Connection!conx.OpenRecordsetRW("rstR",V.Local.sQuery)
+			F.Intrinsic.Control.If(V.ODBC.conx!rstR.EOF,=,True)
+				F.Intrinsic.String.Format(V.Ambient.Date,"yyyy-mm-dd",V.Local.sDate)
+				F.ODBC.conx!rst.AddNew
+				F.ODBC.conx!rst.Set!CODE(V.Screen.F_Main!txtCode.Text)
+				F.ODBC.conx!rst.Set!TYPE("U")
+				F.ODBC.conx!rst.Set!USED_DATE(V.Local.sDate)
+				F.ODBC.conx!rst.Update
+				F.ODBC.conx!rst.Close
+				F.ODBC.conx!rstR.Close
+			F.Intrinsic.Control.Else
+				F.Intrinsic.UI.Msgbox("Restricted Heat Code")
+				Gui.F_Main.txtCode.Text("")
+				F.ODBC.conx!rst.Close
+				F.ODBC.conx!rstR.Close
+				F.Intrinsic.Control.ExitSub
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Else
+		V.Local.sQuery.Set("Select * FROM ATG_3268_HEAT_CODES where TYPE='U' and USED_DATE= CURDATE()")
+		F.ODBC.Connection!conx.OpenRecordsetRW("rst",V.Local.sQuery)
+		F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+			F.ODBC.conx!rst.Set!CODE("   ")
+			F.ODBC.conx!rst.Update
+			F.ODBC.conx!rst.Close
+			F.ODBC.conx!rstR.Close
+		F.Intrinsic.Control.Else
+			F.Intrinsic.String.Format(V.Ambient.Date,"yyyy-mm-dd",V.Local.sDate)
+			F.ODBC.conx!rst.AddNew
+			F.ODBC.conx!rst.Set!CODE("   ")
+			F.ODBC.conx!rst.Set!TYPE("U")
+			F.ODBC.conx!rst.Set!USED_DATE(V.Local.sDate)
+			F.ODBC.conx!rst.Update
+			F.ODBC.conx!rst.Close
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Else
+		F.Intrinsic.UI.Msgbox("Code must be 3 Characters")
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(F_main_unload)
+
+program.sub.cmdsave_click.end
+
+program.sub.cmdcancel_click.start
+F.Intrinsic.Control.CallSub(Cmdsave_click)
+F.Intrinsic.Control.CallSub(F_main_unload)
+
+program.sub.cmdcancel_click.end
+
+Program.Sub.PreProcess.Start
+V.Local.sText.Declare(String)
+V.Local.sPart.Declare(String)
+V.Local.sQuery.Declare(String)
+V.Local.iCount.Declare(String)
+V.Local.iRow.declare(String)
+V.Local.sCode.Declare(String)
+V.Local.sFile.Declare(String)
+
+V.Local.sQuery.Set("Select * FROM ATG_3268_HEAT_CODESwhereTYPE='U'andUSED_DATE=CURDATE()")
+F.ODBC.Connection!conx.OpenRecordsetRO("rst",V.Local.sQuery)
+F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+	V.Local.sCode.Set(V.ODBC.conx!rst.FieldVal!Code)
+F.Intrinsic.Control.EndIf
+F.ODBC.conx!rst.Close
+
+F.Intrinsic.BDF.Load("AUX001","AUX001")
+F.Intrinsic.BDF.ReadRow("AUX001",0,V.Local.sText)
+F.Intrinsic.String.Split(V.Local.sText,"|~|",V.Local.sText)
+F.Intrinsic.String.GSSPartString(V.Local.sText(1),V.Local.sText(2),V.Local.sPart)
+
+F.Intrinsic.String.Concat(V.args.Job,"*!*",V.args.Suffix,"*!*",V.local.stext(5),"*!*",V.Local.sPart,"*!*",V.local.sCode,V.Local.sText)
+F.Intrinsic.String.Concat(V.Caller.TempDir,"\HEATCODETEMP",V.Caller.CompanyCode,V.Caller.Terminal,V.Local.sFile)
+F.Intrinsic.File.String2File(V.Local.sFile,V.Local.sText)
+
+F.Intrinsic.Control.CallSub(F_main_unload)
+
+
+
+Program.Sub.PreProcess.End
+
+Program.Sub.PostProcess.Start
+V.Local.sQuery.Declare(String)
+V.Local.sFile.Declare(String)
+V.Local.sText.Declare(String)
+V.Local.bRet.Declare(Boolean)
+
+
+F.Intrinsic.String.Concat(V.Caller.TempDir,"\HEATCODETEMP",V.Caller.CompanyCode,V.Caller.Terminal,V.Local.sFile)
+F.Intrinsic.File.Exists(V.Local.sFile,V.Local.bRet)
+
+F.Intrinsic.Control.If(V.Local.bRet,=,True)
+	F.Intrinsic.File.File2String(V.Local.sFile,V.Local.sText)
+	F.Intrinsic.String.Split(V.Local.sText,"*!*",V.Local.sText)
+
+	F.Intrinsic.String.Concat("Select TOP 1 * from ITEM_HISTORY where PART='",V.Local.sText(3),"' AND JOB='",V.local.sText(0)," 'AND SUFFIX='",V.local.sText(1),"' ORDER BY DATE_HISTORY DESC;",V.Local.sQuery)
+	F.ODBC.Connection!conx.OpenRecordsetRO("rst",V.Local.sQuery)
+	F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+
+		F.Intrinsic.String.Concat("Select * From ATG_3268_HEAT_JOB WHERE JOB='",V.local.sText(0),"' AND SUFFIX='",V.local.sText(1),"' AND SEQ='",V.local.sText(2),"'",V.Local.sQuery)
+		F.ODBC.Connection!conx.OpenLocalRecordsetRW("rstAdd",V.Local.sQuery)
+		F.Intrinsic.Control.If(V.ODBC.conx!rstAdd.EOF,=,True)
+			F.ODBC.conx!rstAdd.AddNew
+			F.ODBC.conx!rstAdd.Set!JOB(V.local.sText(0))
+			F.ODBC.conx!rstAdd.Set!SUFFIX(V.local.sText(1))
+			F.ODBC.conx!rstAdd.Set!SEQ(V.local.sText(2))
+			F.ODBC.conx!rstAdd.Set!CODE(V.local.sText(4))
+			F.ODBC.conx!rstAdd.Set!RAW_HEAT(V.ODBC.conx!rst.FieldVal!HEAT)
+			F.ODBC.conx!rstAdd.Set!RAW_LOT(V.ODBC.conx!rst.FieldVal!LOT)
+			F.ODBC.conx!rstAdd.Update
+			F.ODBC.conx!rstAdd.Close
+		F.Intrinsic.Control.Else
+			F.ODBC.conx!rstAdd.Set!CODE(V.local.sText(4))
+			F.ODBC.conx!rstAdd.Set!RAW_HEAT(V.ODBC.conx!rst.FieldVal!HEAT)
+			F.ODBC.conx!rstAdd.Set!RAW_LOT(V.ODBC.conx!rst.FieldVal!LOT)
+			F.ODBC.conx!rstAdd.Update
+			F.ODBC.conx!rstAdd.Close
+		F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.EndIf
+	F.ODBC.conx!rst.Close
+	F.Intrinsic.File.DeleteFile(V.Local.sFile)
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(F_main_unload)
+
+Program.Sub.PostProcess.End
+
+Program.Sub.HeatPopulate.Start
+V.Local.sQuery.Declare(String)
+V.Local.sHeat.Declare(String)
+
+
+F.Intrinsic.Control.If(V.Passed.000005,<>,"")
+F.Intrinsic.Control.AndIf(V.Passed.000006,<>,"000")
+	F.Intrinsic.String.Concat("Select * From ATG_3268_HEAT_JOB where JOB='",V.Passed.000005,"' and Suffix='",V.Passed.000006,"'",V.Local.sQuery)
+	F.ODBC.Connection!conx.OpenRecordsetRO("rst",V.Local.sQuery)
+	F.Intrinsic.Control.If(V.ODBC.conx!rst.EOF,=,False)
+		F.Intrinsic.Control.If(V.ODBC.conx!rst.FieldValtrim!CODE,<>,"")
+			F.Intrinsic.String.Concat(V.ODBC.conx!rst.FieldVal!CODE,"-",V.ODBC.conx!rst.FieldVal!RAW_HEAT,V.Local.sHeat)
+			V.Passed.000013.Set(V.Local.sHeat)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+	F.ODBC.conx!rst.Close
+F.Intrinsic.Control.EndIf
+
+F.Intrinsic.Control.CallSub(F_main_unload)
+
+Program.Sub.HeatPopulate.End
+
+
